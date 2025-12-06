@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>環遊世界</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Noto+Sans+TC:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Fredoka', 'Noto Sans TC', sans-serif;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: background 1s ease;
+        }
+
+        /* The Game Grid */
+        .grid-container {
+            display: grid;
+            gap: 4px; /* Slightly larger gap for cleaner look */
+            width: 100%;
+            max-width: 500px;
+            aspect-ratio: 1 / 1;
+            background-color: rgba(255, 255, 255, 0.25);
+            border-radius: 16px;
+            padding: 10px;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            border: 1px solid rgba(255,255,255,0.4);
+            transition: all 0.3s ease;
+        }
+
+        .tile {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            border-radius: 12px;
+            background-color: rgba(255, 255, 255, 0.85);
+            transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+            aspect-ratio: 1;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1), inset 0 -4px 0 rgba(0,0,0,0.1);
+            z-index: 1;
+        }
+
+        .tile:active { transform: scale(0.92); }
+
+        /* Selected State */
+        .tile.selected {
+            background-color: #fef08a;
+            transform: scale(1.1);
+            z-index: 10;
+            box-shadow: 0 0 20px #fde047;
+            border: 3px solid #eab308;
+        }
+
+        /* Super Landmark (Bomb) */
+        .tile.super-item {
+            background: radial-gradient(circle at 30% 30%, #4ade80, #3b82f6);
+            box-shadow: 0 0 15px #3b82f6, inset 0 -4px 0 rgba(0,0,0,0.2);
+            animation: pulse 1.5s infinite;
+            border: 2px solid white;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 10px #3b82f6; }
+            50% { transform: scale(1.05); box-shadow: 0 0 25px #60a5fa; }
+            100% { transform: scale(1); box-shadow: 0 0 10px #3b82f6; }
+        }
+
+        /* Match Animation */
+        .tile.matched {
+            animation: popOut 0.3s ease-out forwards;
+        }
+
+        @keyframes popOut {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.4); opacity: 0.8; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        /* Floating Score Text */
+        .floating-text {
+            position: absolute;
+            color: #ffffff;
+            font-weight: 900;
+            font-size: 28px;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.5);
+            pointer-events: none;
+            animation: floatUp 0.8s ease-out forwards;
+            z-index: 50;
+            white-space: nowrap;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-60px) scale(1.2); opacity: 0; }
+        }
+
+        /* Shake Animation */
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        /* Modal Overlay */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(8px);
+            padding: 1.5rem;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .modal.active { display: flex; }
+        
+        .quiz-option {
+            transition: all 0.2s;
+        }
+        .quiz-option:active {
+            transform: scale(0.96);
+        }
+    </style>
+</head>
+<body id="game-body" class="min-h-screen flex flex-col items-center justify-center p-4 overflow-hidden text-gray-800">
+
+    <!-- Header -->
+    <div class="w-full max-w-[500px] mb-4 px-2 relative">
+        <div class="flex justify-between items-center mb-3">
+            <div>
+                <h1 class="text-4xl font-black text-white drop-shadow-lg tracking-wider">環遊世界</h1>
+                <!-- Moved Info Button here next to Level Display -->
+                <div class="flex items-center gap-2 mt-1">
+                    <p class="text-white/90 text-base font-bold">第 <span id="level-display" class="text-yellow-300 text-xl">1</span> 關</p>
+                    <button onclick="showInstructions()" class="bg-white/20 hover:bg-white/30 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold border border-white/40 transition text-sm" aria-label="遊戲說明">
+                        ?
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-2">
+                 <div class="bg-white/90 rounded-2xl px-3 py-2 shadow-lg text-center min-w-[70px] border-b-4 border-blue-200">
+                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-wide">目標</p>
+                    <p id="target-display" class="text-xl font-black text-blue-600 leading-tight">600</p>
+                </div>
+                <div class="bg-white/90 rounded-2xl px-3 py-2 shadow-lg text-center min-w-[70px] border-b-4 border-red-200">
+                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-wide">步數</p>
+                    <p id="moves-display" class="text-xl font-black text-red-500 leading-tight">20</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="w-full bg-black/20 h-3 rounded-full overflow-hidden backdrop-blur-sm border border-white/20 shadow-inner">
+            <div id="progress-bar" class="h-full bg-gradient-to-r from-yellow-300 to-orange-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(253,224,71,0.6)]" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <!-- Game Board -->
+    <div class="grid-container relative" id="grid">
+        <!-- Grid items generated by JS -->
+    </div>
+    
+    <!-- Floating Score -->
+    <div class="mt-6 bg-white/10 backdrop-blur-md rounded-full px-6 py-2 border border-white/20">
+        <span class="text-white font-bold text-xl drop-shadow-md">得分: <span id="score-display" class="font-mono text-2xl text-yellow-300">0</span></span>
+    </div>
+
+    <!-- Level Complete / Game Over Modal -->
+    <div id="game-modal" class="modal">
+        <div class="bg-white rounded-[2rem] p-8 text-center max-w-sm w-full shadow-2xl transform transition-all scale-100 border-4 border-white/50">
+            <h2 id="modal-title" class="text-3xl font-black mb-3 text-blue-600">關卡完成！</h2>
+            <p id="modal-message" class="text-gray-600 mb-8 font-medium text-lg">準備好前往下一個國家了嗎？</p>
+            <button id="modal-btn" class="w-full bg-gradient-to-r from-blue-500 to-teal-500 text-white font-bold text-xl py-4 px-8 rounded-2xl shadow-lg hover:shadow-blue-300/50 transition transform hover:-translate-y-1 active:scale-95">
+                下一關
+            </button>
+        </div>
+    </div>
+
+    <!-- Quiz Modal -->
+    <div id="quiz-modal" class="modal">
+        <div class="bg-white rounded-[2rem] p-6 w-full max-w-md mx-4 shadow-2xl border-4 border-yellow-400 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2 bg-yellow-400"></div>
+            <div class="text-center mb-6">
+                <span class="inline-block bg-yellow-100 text-yellow-800 px-4 py-1 rounded-full font-bold text-sm mb-3">🌍 地理知識挑戰</span>
+                <h3 class="text-xl font-bold text-gray-800 leading-relaxed" id="quiz-question">題目載入中...</h3>
+                <div class="flex justify-center gap-4 mt-3 text-sm font-bold">
+                    <span class="text-green-600 bg-green-50 px-2 py-1 rounded">✅ +2 步</span>
+                    <span class="text-red-500 bg-red-50 px-2 py-1 rounded">❌ -3 步</span>
+                </div>
+            </div>
+            
+            <div id="quiz-options" class="grid grid-cols-1 gap-3 mb-4">
+                <!-- Options will be injected here -->
+            </div>
+            
+            <div id="quiz-feedback" class="min-h-[3rem] text-center mb-2"></div>
+            
+            <button id="quiz-next-btn" class="hidden w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-xl shadow-lg hover:bg-gray-700 transition-colors transform active:scale-95">
+                確認
+            </button>
+        </div>
+    </div>
+
+    <!-- Instructions Modal -->
+    <div id="instructions-modal" class="modal">
+        <div class="bg-white rounded-[2rem] p-6 max-w-sm w-full mx-4 shadow-2xl border-4 border-blue-300">
+            <div class="text-center mb-4">
+                <h2 class="text-2xl font-black text-blue-600 mb-2">✈️ 遊戲說明</h2>
+                <div class="space-y-4 text-left text-gray-700">
+                    <div class="flex items-start gap-3">
+                        <div class="bg-blue-100 p-2 rounded-lg text-2xl">🔗</div>
+                        <div>
+                            <p class="font-bold text-gray-900">連線消除</p>
+                            <p class="text-sm">交換地標，將 3 個以上相同的連成一線即可消除得分。</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="bg-yellow-100 p-2 rounded-lg text-2xl">🧠</div>
+                        <div>
+                            <p class="font-bold text-gray-900">回答問題</p>
+                            <p class="text-sm">每消除幾次會出現地理問答。答對獲得步數獎勵，答錯會扣步數喔！</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="bg-green-100 p-2 rounded-lg text-2xl">🎯</div>
+                        <div>
+                            <p class="font-bold text-gray-900">過關目標</p>
+                            <p class="text-sm">在步數用完前達到目標分數。小心不要用光步數！</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button onclick="closeInstructions()" class="w-full bg-blue-500 text-white font-bold py-3 rounded-xl hover:bg-blue-600 transition shadow-md active:scale-95">
+                開始旅程！
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const gridDisplay = document.querySelector('#grid');
+        const scoreDisplay = document.querySelector('#score-display');
+        const movesDisplay = document.querySelector('#moves-display');
+        const targetDisplay = document.querySelector('#target-display');
+        const levelDisplay = document.querySelector('#level-display');
+        const progressBar = document.querySelector('#progress-bar');
+        const gameBody = document.querySelector('#game-body');
+        
+        // Modals
+        const modal = document.querySelector('#game-modal');
+        const modalTitle = document.querySelector('#modal-title');
+        const modalMessage = document.querySelector('#modal-message');
+        const modalBtn = document.querySelector('#modal-btn');
+        const instructionsModal = document.querySelector('#instructions-modal');
+
+        // Quiz Elements
+        const quizModal = document.querySelector('#quiz-modal');
+        const quizQuestionEl = document.querySelector('#quiz-question');
+        const quizOptionsEl = document.querySelector('#quiz-options');
+        const quizFeedbackEl = document.querySelector('#quiz-feedback');
+        const quizNextBtn = document.querySelector('#quiz-next-btn');
+
+        let width = 5; // Default start width (5x5)
+        const squares = [];
+        
+        // Expanded Landmark Emojis Pool
+        const allLandmarkTypes = [
+            '🗼', // Tokyo Tower / Eiffel Tower
+            '🗻', // Fuji
+            '🗿', // Moai
+            '🗽', // Liberty
+            '🕌', // Taj Mahal
+            '🏯', // Japanese Castle
+            '🏰', // European Castle
+            '🌉', // Golden Gate
+            '🏛️', // Parthenon
+            '🏜️', // Pyramids
+            '⛩️', // Torii Gate
+        ];
+        
+        let currentLevelTypes = []; 
+
+        const SCORE_MATCH = 10; 
+        const SCORE_EXPLOSION = 50;
+        const SCORE_QUIZ_CORRECT = 100; 
+        const SCORE_QUIZ_WRONG = -50; 
+        
+        let score = 0;
+        let level = 1;
+        let moves = 20; // Correct initial moves
+        let targetScore = 600; // Correct initial target
+        let selectedSquareId = null;
+        let isProcessing = false;
+        let isQuizActive = false;
+        let isLevelComplete = false; 
+        let gameInterval;
+        
+        // Quiz Variables
+        let movesSinceQuiz = 0;
+        const MOVES_PER_QUIZ = 3; 
+
+        // Backgrounds for levels
+        const levelBackgrounds = [
+            'bg-gradient-to-br from-cyan-400 via-blue-400 to-indigo-500', // Level 1: Bright Sky
+            'bg-gradient-to-br from-amber-200 via-orange-300 to-rose-400', // Level 2: Warm Sunset
+            'bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-600', // Level 3: Tropical
+            'bg-gradient-to-br from-slate-800 via-violet-900 to-fuchsia-900' // Level 4: Night City
+        ];
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // 60 Geo Questions
+        const allGeoQuestions = [
+            { q: "「艾菲爾鐵塔」位於哪個城市？", options: ["巴黎", "倫敦", "紐約", "東京"], correct: 0 },
+            { q: "「富士山」是哪個國家的最高峰？", options: ["韓國", "中國", "日本", "越南"], correct: 2 },
+            { q: "擁有「金字塔」和「人面獅身像」的是哪個國家？", options: ["墨西哥", "埃及", "印度", "希臘"], correct: 1 },
+            { q: "「自由女神像」位於美國的哪個城市？", options: ["華盛頓", "洛杉磯", "舊金山", "紐約"], correct: 3 },
+            { q: "以「袋鼠」和「無尾熊」聞名的國家是？", options: ["紐西蘭", "澳洲", "奧地利", "南非"], correct: 1 },
+            { q: "世界上海拔最高的山峰是？", options: ["K2", "富士山", "聖母峰 (珠穆朗瑪峰)", "阿爾卑斯山"], correct: 2 },
+            { q: "「泰姬瑪哈陵」位於哪個國家？", options: ["泰國", "印度", "印尼", "馬來西亞"], correct: 1 },
+            { q: "英國的首都叫做？", options: ["曼徹斯特", "巴黎", "倫敦", "劍橋"], correct: 2 },
+            { q: "被稱為「千塔之國」或擁有吳哥窟的國家是？", options: ["柬埔寨", "泰國", "緬甸", "寮國"], correct: 0 },
+            { q: "「摩艾石像」位於哪裡？", options: ["夏威夷", "復活節島", "大溪地", "關島"], correct: 1 },
+            { q: "世界上國土面積最大的國家是？", options: ["美國", "中國", "俄羅斯", "加拿大"], correct: 2 },
+            { q: "擁有「水都」之稱，以運河聞名的義大利城市？", options: ["羅馬", "米蘭", "威尼斯", "佛羅倫斯"], correct: 2 },
+            { q: "日本的首都？", options: ["大阪", "京都", "東京", "北海道"], correct: 2 },
+            { q: "「比薩斜塔」位於哪個國家？", options: ["法國", "西班牙", "義大利", "希臘"], correct: 2 },
+            { q: "世界第一大河「亞馬遜河」主要流經哪個洲？", options: ["非洲", "南美洲", "亞洲", "北美洲"], correct: 1 },
+            { q: "韓國的傳統服飾叫做？", options: ["和服", "韓服", "旗袍", "紗麗"], correct: 1 },
+            { q: "「萬里長城」位於哪個國家？", options: ["中國", "蒙古", "越南", "韓國"], correct: 0 },
+            { q: "美國的首都是？", options: ["紐約", "芝加哥", "華盛頓特區", "西雅圖"], correct: 2 },
+            { q: "被稱為「楓葉之國」的是？", options: ["美國", "日本", "加拿大", "德國"], correct: 2 },
+            { q: "以「森巴舞」和「足球」聞名的南美洲大國？", options: ["阿根廷", "巴西", "智利", "秘魯"], correct: 1 },
+            { q: "著名的「雪梨歌劇院」造型像什麼？", options: ["帆船", "貝殼", "香菇", "帽子"], correct: 0 },
+            { q: "泰國的首都？", options: ["河內", "雅加達", "曼谷", "馬尼拉"], correct: 2 },
+            { q: "歐洲聯盟 (EU) 使用的通用貨幣是？", options: ["美元", "英鎊", "歐元", "法郎"], correct: 2 },
+            { q: "越南的傳統美食「河粉」通常被稱為？", options: ["Pad Thai", "Pho", "Ramen", "Udon"], correct: 1 },
+            { q: "世界上人口最多的兩個國家是中國和？", options: ["美國", "印尼", "印度", "巴西"], correct: 2 },
+            { q: "哪一個城市有「霧都」之稱？", options: ["基隆", "倫敦", "西雅圖", "重慶"], correct: 1 },
+            { q: "「大笨鐘」位於哪個城市？", options: ["倫敦", "巴黎", "柏林", "馬德里"], correct: 0 },
+            { q: "荷蘭以什麼花聞名？", options: ["玫瑰", "櫻花", "鬱金香", "牡丹"], correct: 2 },
+            { q: "著名的古蹟「羅馬競技場」位於？", options: ["希臘", "義大利", "土耳其", "西班牙"], correct: 1 },
+            { q: "位於美國舊金山的紅色大橋叫做？", options: ["倫敦大橋", "布魯克林大橋", "金門大橋", "明石海峽大橋"], correct: 2 },
+            { q: "世界上最小的國家是？", options: ["摩納哥", "梵蒂岡", "馬爾地夫", "新加坡"], correct: 1 },
+            { q: "「極光」最容易在哪個區域看到？", options: ["赤道附近", "熱帶雨林", "極圈附近", "沙漠地區"], correct: 2 },
+            { q: "擁有「千島之國」美稱的國家是？", options: ["菲律賓", "印尼", "日本", "英國"], correct: 1 },
+            { q: "非洲最高的山是？", options: ["吉力馬札羅山", "阿爾卑斯山", "富士山", "安地斯山"], correct: 0 },
+            { q: "哪個國家有「獅城」之稱？", options: ["斯里蘭卡", "新加坡", "馬來西亞", "泰國"], correct: 1 },
+            { q: "被稱為「翡翠之島」的是？", options: ["冰島", "愛爾蘭", "格陵蘭", "紐西蘭"], correct: 1 },
+            { q: "「好萊塢」位於美國哪個州？", options: ["加州", "佛州", "紐約州", "德州"], correct: 0 },
+            { q: "世界上最深的湖泊是？", options: ["貝加爾湖", "維多利亞湖", "裏海", "蘇必略湖"], correct: 0 },
+            { q: "以「鬥牛」和「佛朗明哥舞」聞名的國家？", options: ["墨西哥", "葡萄牙", "西班牙", "阿根廷"], correct: 2 },
+            { q: "德國的首都是？", options: ["慕尼黑", "柏林", "法蘭克福", "漢堡"], correct: 1 },
+            { q: "「聖彼得大教堂」位於？", options: ["俄羅斯", "梵蒂岡", "德國", "法國"], correct: 1 },
+            { q: "世界上最長的河流是（視測量方式而定）？", options: ["長江", "密西西比河", "尼羅河", "黃河"], correct: 2 },
+            { q: "「馬丘比丘」是哪個古文明的遺跡？", options: ["馬雅", "阿茲特克", "印加", "埃及"], correct: 2 },
+            { q: "位於南美洲的狹長國家，產銅量世界第一？", options: ["智利", "秘魯", "巴西", "阿根廷"], correct: 0 },
+            { q: "哪個國家被稱為「日不落帝國」？", options: ["西班牙", "法國", "英國", "葡萄牙"], correct: 2 },
+            { q: "「死海」位於哪兩個國家之間？", options: ["以色列與約旦", "埃及與利比亞", "土耳其與希臘", "伊朗與伊拉克"], correct: 0 },
+            { q: "有「世界屋脊」之稱的高原是？", options: ["巴西高原", "青藏高原", "德干高原", "安納托利亞高原"], correct: 1 },
+            { q: "芬蘭以什麼聞名於世？", options: ["聖誕老人", "鬱金香", "巧克力", "披薩"], correct: 0 },
+            { q: "「合掌村」位於哪個國家？", options: ["韓國", "中國", "日本", "泰國"], correct: 2 },
+            { q: "冰島的首都是？", options: ["奧斯陸", "雷克雅維克", "赫爾辛基", "哥本哈根"], correct: 1 },
+            { q: "著名的「黃石國家公園」位於？", options: ["加拿大", "美國", "澳洲", "紐西蘭"], correct: 1 },
+            { q: "哪個國家有「巧克力王國」之稱？", options: ["瑞士", "比利時", "德國", "荷蘭"], correct: 1 },
+            { q: "「撒哈拉沙漠」位於哪個洲？", options: ["非洲", "亞洲", "澳洲", "南美洲"], correct: 0 },
+            { q: "台灣最高的山是？", options: ["阿里山", "玉山", "雪山", "陽明山"], correct: 1 },
+            { q: "「克里姆林宮」位於哪個城市？", options: ["聖彼得堡", "莫斯科", "基輔", "華沙"], correct: 1 },
+            { q: "著名的「下龍灣」位於？", options: ["越南", "泰國", "菲律賓", "馬來西亞"], correct: 0 },
+            { q: "土耳其橫跨哪兩個洲？", options: ["歐亞", "亞非", "歐非", "南北美"], correct: 0 },
+            { q: "世界上使用人數最多的語言（母語）是？", options: ["英語", "西班牙語", "中文", "阿拉伯語"], correct: 2 },
+            { q: "「巨石陣」位於哪個國家？", options: ["愛爾蘭", "英國", "蘇格蘭", "法國"], correct: 1 },
+            { q: "挪威的海岸線以什麼地形聞名？", options: ["沙灘", "峽灣", "珊瑚礁", "紅樹林"], correct: 1 }
+        ];
+
+        let availableQuestions = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            availableQuestions = [...allGeoQuestions];
+            
+            // Show instructions first
+            setTimeout(() => {
+                showInstructions();
+            }, 500);
+
+            // Game Loop
+            gameInterval = window.setInterval(() => {
+                if(!modal.classList.contains('active') && !isQuizActive && !isLevelComplete && !instructionsModal.classList.contains('active')) {
+                    moveDown();
+                    checkMatches();
+                }
+            }, 100);
+            
+            document.body.addEventListener('click', () => {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            }, { once: true });
+        });
+        
+        quizNextBtn.onclick = closeQuiz;
+
+        function showInstructions() {
+            instructionsModal.classList.add('active');
+        }
+
+        function closeInstructions() {
+            instructionsModal.classList.remove('active');
+            if (squares.length === 0) {
+                initLevel();
+            }
+        }
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.1);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                osc.start(now);
+                osc.stop(now + 0.6);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(100, now + 0.4);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            }
+        }
+
+        function initLevel() {
+            score = 0;
+            isLevelComplete = false;
+            movesSinceQuiz = 0;
+            selectedSquareId = null;
+            isProcessing = false;
+            isQuizActive = false;
+            
+            // Set Board Size (Mobile Friendly)
+            if (level === 1) {
+                width = 5; // Easier, bigger tiles
+            } else {
+                width = 7; // Harder, decent size
+            }
+
+            // Update CSS for Grid
+            gridDisplay.style.gridTemplateColumns = `repeat(${width}, 1fr)`;
+            gridDisplay.style.gridTemplateRows = `repeat(${width}, 1fr)`;
+
+            // Update Background
+            const bgClass = levelBackgrounds[(level - 1) % levelBackgrounds.length];
+            gameBody.className = `min-h-screen flex flex-col items-center justify-center p-4 overflow-hidden text-gray-800 ${bgClass}`;
+
+            // Level Progression
+            const numTypes = Math.min(4 + Math.floor((level - 1) / 2), allLandmarkTypes.length);
+            currentLevelTypes = allLandmarkTypes.slice(0, numTypes);
+            
+            // Adjusted difficulty based on feedback: Lower target, more moves
+            // New: 600 start, +400 per level. Lvl3 is now 1400 instead of 2400.
+            targetScore = 600 + (level - 1) * 400; 
+            
+            // New: 20 start, +3 per level. Lvl3 is now 26 moves.
+            moves = 20 + (level - 1) * 3; 
+            
+            updateUI();
+            
+            gridDisplay.innerHTML = '';
+            squares.length = 0;
+            modal.classList.remove('active');
+            quizModal.classList.remove('active');
+            
+            createBoard();
+        }
+
+        function updateUI() {
+            scoreDisplay.innerHTML = score;
+            movesDisplay.innerHTML = moves;
+            targetDisplay.innerHTML = targetScore;
+            levelDisplay.innerHTML = level;
+            
+            const progress = Math.min((score / targetScore) * 100, 100);
+            progressBar.style.width = `${progress}%`;
+        }
+
+        function createBoard() {
+            for (let i = 0; i < width * width; i++) {
+                const square = document.createElement('div');
+                square.setAttribute('id', i);
+                square.classList.add('tile');
+                
+                // Optimized Tile Size for Mobile
+                if (width === 5) {
+                    square.style.fontSize = 'clamp(32px, 12vw, 56px)';
+                } else {
+                    square.style.fontSize = 'clamp(24px, 8vw, 42px)';
+                }
+
+                let randomType;
+                let isMatch;
+
+                // Ensure no matches on start
+                do {
+                    isMatch = false;
+                    randomType = Math.floor(Math.random() * currentLevelTypes.length);
+                    // Check Left
+                    if (i % width >= 2) {
+                        const left1 = squares[i-1].innerText;
+                        const left2 = squares[i-2].innerText;
+                        if (currentLevelTypes[randomType] === left1 && currentLevelTypes[randomType] === left2) isMatch = true;
+                    }
+                    // Check Up
+                    if (i >= width * 2) {
+                        const top1 = squares[i-width].innerText;
+                        const top2 = squares[i-width*2].innerText;
+                        if (currentLevelTypes[randomType] === top1 && currentLevelTypes[randomType] === top2) isMatch = true;
+                    }
+                } while(isMatch);
+
+                square.innerText = currentLevelTypes[randomType];
+                square.addEventListener('click', () => clickTile(i));
+                gridDisplay.appendChild(square);
+                squares.push(square);
+            }
+        }
+
+        function clickTile(index) {
+            if (isProcessing || isQuizActive || isLevelComplete || moves <= 0 || instructionsModal.classList.contains('active')) return;
+            // Guard clause for array bounds
+            if (!squares[index]) return;
+            const square = squares[index];
+
+            if (selectedSquareId === null) {
+                selectedSquareId = index;
+                square.classList.add('selected');
+                return;
+            }
+
+            if (selectedSquareId === index) {
+                square.classList.remove('selected');
+                selectedSquareId = null;
+                return;
+            }
+
+            const currentSelected = squares[selectedSquareId];
+            
+            const isLeftEdge = selectedSquareId % width === 0;
+            const isRightEdge = selectedSquareId % width === width - 1;
+            let isValidAdjacency = false;
+            if (index === selectedSquareId - width) isValidAdjacency = true; 
+            if (index === selectedSquareId + width) isValidAdjacency = true; 
+            if (index === selectedSquareId - 1 && !isLeftEdge) isValidAdjacency = true; 
+            if (index === selectedSquareId + 1 && !isRightEdge) isValidAdjacency = true; 
+
+            if (isValidAdjacency) {
+                swapTiles(selectedSquareId, index);
+                
+                const isMatch = checkRowForThree(true) || checkColumnForThree(true);
+                
+                if (isMatch) {
+                    currentSelected.classList.remove('selected');
+                    selectedSquareId = null;
+                    isProcessing = false;
+                    
+                    moves--;
+                    movesSinceQuiz++;
+                    updateUI();
+                    
+                    if (movesSinceQuiz >= MOVES_PER_QUIZ && moves > 0 && !isLevelComplete) {
+                        setTimeout(() => triggerQuiz(), 600); 
+                    } else {
+                        checkGameStatus();
+                    }
+                } else {
+                    isProcessing = true;
+                    currentSelected.classList.remove('selected');
+                    currentSelected.classList.add('shake');
+                    squares[index].classList.add('shake');
+                    
+                    setTimeout(() => {
+                        swapTiles(selectedSquareId, index);
+                        currentSelected.classList.remove('shake');
+                        squares[index].classList.remove('shake');
+                        selectedSquareId = null;
+                        isProcessing = false;
+                    }, 400);
+                }
+            } else {
+                currentSelected.classList.remove('selected');
+                selectedSquareId = index;
+                square.classList.add('selected');
+            }
+        }
+
+        function swapTiles(id1, id2) {
+            // Guard clause
+            if (!squares[id1] || !squares[id2]) return;
+            const tempText = squares[id1].innerText;
+            squares[id1].innerText = squares[id2].innerText;
+            squares[id2].innerText = tempText;
+
+            const is1Super = squares[id1].classList.contains('super-item');
+            const is2Super = squares[id2].classList.contains('super-item');
+            
+            if(is1Super) squares[id1].classList.remove('super-item');
+            if(is2Super) squares[id2].classList.remove('super-item');
+            
+            if(is1Super) squares[id2].classList.add('super-item');
+            if(is2Super) squares[id1].classList.add('super-item');
+        }
+
+        function checkMatches() {
+            if (squares.length < width * width) return;
+            checkRowForThree();
+            checkColumnForThree();
+            updateUI();
+        }
+
+        function triggerQuiz() {
+            if(isLevelComplete) return; 
+            isQuizActive = true;
+            quizModal.classList.add('active');
+            quizNextBtn.classList.add('hidden');
+            
+            if (availableQuestions.length === 0) {
+                availableQuestions = [...allGeoQuestions];
+            }
+
+            const randomIndex = Math.floor(Math.random() * availableQuestions.length);
+            const qData = availableQuestions[randomIndex];
+            availableQuestions.splice(randomIndex, 1);
+
+            // Randomize Options Order
+            const optionsWithIndices = qData.options.map((opt, i) => ({
+                text: opt,
+                originalIndex: i
+            }));
+            
+            // Fisher-Yates Shuffle
+            for (let i = optionsWithIndices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [optionsWithIndices[i], optionsWithIndices[j]] = [optionsWithIndices[j], optionsWithIndices[i]];
+            }
+
+            const correctText = qData.options[qData.correct];
+
+            quizQuestionEl.innerText = qData.q;
+            quizOptionsEl.innerHTML = '';
+            quizFeedbackEl.innerHTML = '';
+            
+            optionsWithIndices.forEach((optObj) => {
+                const btn = document.createElement('button');
+                btn.className = "quiz-option w-full bg-blue-50 hover:bg-blue-100 text-blue-800 font-semibold py-3 px-4 rounded-xl border-2 border-blue-200 shadow-sm text-lg";
+                btn.innerText = optObj.text;
+                // Check against original index
+                btn.onclick = () => handleQuizAnswer(optObj.originalIndex === qData.correct, btn, correctText);
+                quizOptionsEl.appendChild(btn);
+            });
+        }
+
+        function handleQuizAnswer(isCorrect, btnElement, correctText) {
+            const buttons = quizOptionsEl.querySelectorAll('button');
+            buttons.forEach(b => b.disabled = true);
+
+            if (isCorrect) {
+                playSound('correct');
+                score += SCORE_QUIZ_CORRECT;
+                moves += 2; 
+                btnElement.classList.remove('bg-blue-50', 'hover:bg-blue-100', 'text-blue-800', 'border-blue-200');
+                btnElement.classList.add('bg-green-500', 'text-white', 'border-green-600', 'shadow-md');
+                quizFeedbackEl.innerHTML = `<span class='font-black text-xl text-green-600'>答對了！ +${SCORE_QUIZ_CORRECT}分，<br>獎勵 +2 步！</span>`;
+            } else {
+                playSound('wrong');
+                score = Math.max(0, score + SCORE_QUIZ_WRONG);
+                moves -= 3;
+                btnElement.classList.remove('bg-blue-50', 'hover:bg-blue-100', 'text-blue-800', 'border-blue-200');
+                btnElement.classList.add('bg-red-500', 'text-white', 'border-red-600', 'shadow-md');
+                
+                quizFeedbackEl.innerHTML = `
+                    <div class="mb-3">
+                        <span class='font-black text-xl text-red-600 block'>答錯了！ ${SCORE_QUIZ_WRONG}分，懲罰 -3 步！</span>
+                    </div>
+                    <div class="p-4 bg-green-50 border-4 border-green-400 rounded-2xl shadow-lg animate-[pulse_1s_infinite]">
+                        <p class="text-xs font-black text-gray-500 uppercase mb-1 tracking-widest">正確答案是</p>
+                        <p class="text-3xl font-black text-green-600 drop-shadow-sm">${correctText}</p>
+                    </div>
+                `;
+            }
+            
+            updateUI();
+            quizNextBtn.classList.remove('hidden');
+        }
+        
+        function closeQuiz() {
+            quizModal.classList.remove('active');
+            quizNextBtn.classList.add('hidden');
+            isQuizActive = false;
+            movesSinceQuiz = 0;
+            checkGameStatus();
+        }
+
+        function checkGameStatus() {
+            if (isQuizActive || isLevelComplete || instructionsModal.classList.contains('active')) return; 
+
+            if (score >= targetScore) {
+                isLevelComplete = true; 
+                setTimeout(() => showModal(true), 500);
+            } else if (moves <= 0) {
+                setTimeout(() => {
+                    if(score < targetScore) showModal(false);
+                }, 500);
+            }
+        }
+
+        function showModal(win) {
+            modal.classList.add('active');
+            if (win) {
+                modalTitle.innerText = "關卡完成！";
+                modalTitle.className = "text-3xl font-black mb-2 text-blue-600";
+                modalMessage.innerText = `得分: ${score}。環遊世界繼續下一站！`;
+                modalBtn.innerText = "下一關";
+                modalBtn.className = "w-full bg-gradient-to-r from-blue-500 to-teal-500 text-white font-bold text-xl py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-1 active:scale-95";
+                modalBtn.onclick = nextLevel;
+            } else {
+                modalTitle.innerText = "旅途暫停！";
+                modalTitle.className = "text-3xl font-black mb-2 text-red-500";
+                modalMessage.innerText = `步數用完了，還差 ${targetScore - score} 分。地理知識要再加強喔！`;
+                modalBtn.innerText = "重新開始";
+                modalBtn.className = "w-full bg-gray-700 text-white font-bold text-xl py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-1 active:scale-95";
+                modalBtn.onclick = restartLevel;
+            }
+        }
+
+        function nextLevel() {
+            level++;
+            initLevel();
+        }
+
+        function restartLevel() {
+            initLevel();
+        }
+
+        function checkRowForThree(dryRun = false) {
+            if (squares.length < width * width) return false;
+            let matchFound = false;
+            for (let i = 0; i < width * width; i++) {
+                if (i % width > width - 3) continue;
+                
+                let rowOfThree = [i, i + 1, i + 2];
+                if (!squares[i]) continue;
+                let decidedType = squares[i].innerText;
+                const isBlank = squares[i].innerText === '';
+
+                if (rowOfThree.every(index => squares[index] && squares[index].innerText === decidedType && !isBlank)) {
+                    matchFound = true;
+                    if (!dryRun) executeMatch(rowOfThree);
+                }
+            }
+            return matchFound;
+        }
+
+        function checkColumnForThree(dryRun = false) {
+             if (squares.length < width * width) return false;
+            let matchFound = false;
+            for (let i = 0; i < width * (width - 2); i++) {
+                let columnOfThree = [i, i + width, i + width * 2];
+                if (!squares[i]) continue;
+                let decidedType = squares[i].innerText;
+                const isBlank = squares[i].innerText === '';
+
+                if (columnOfThree.every(index => squares[index] && squares[index].innerText === decidedType && !isBlank)) {
+                    matchFound = true;
+                    if (!dryRun) executeMatch(columnOfThree);
+                }
+            }
+            return matchFound;
+        }
+
+        function executeMatch(indices) {
+            let points = SCORE_MATCH;
+            let exploded = false;
+
+            indices.forEach(index => {
+                if (squares[index] && squares[index].classList.contains('super-item')) {
+                    explode(index);
+                    exploded = true;
+                    points += SCORE_EXPLOSION;
+                }
+            });
+
+            if (!exploded) {
+                score += points;
+                if (squares[indices[1]]) showFloatingText(squares[indices[1]], `+${points}`);
+                indices.forEach(index => {
+                    if (squares[index]) {
+                        squares[index].classList.add('matched');
+                        setTimeout(() => {
+                            if (squares[index]) {
+                                squares[index].innerText = '';
+                                squares[index].classList.remove('matched');
+                                squares[index].classList.remove('super-item');
+                            }
+                        }, 300);
+                    }
+                });
+            } else {
+                score += points;
+            }
+            
+            checkGameStatus();
+        }
+
+        function explode(centerIndex) {
+            const centerRow = Math.floor(centerIndex / width);
+            const centerCol = centerIndex % width;
+            
+            for(let r = centerRow - 1; r <= centerRow + 1; r++) {
+                for(let c = centerCol - 1; c <= centerCol + 1; c++) {
+                    if(r >= 0 && r < width && c >= 0 && c < width) {
+                        const idx = r * width + c;
+                        if(squares[idx] && squares[idx].innerText !== '') {
+                            score += 5; 
+                            squares[idx].classList.add('matched');
+                            setTimeout(() => {
+                                if (squares[idx]) {
+                                    squares[idx].innerText = '';
+                                    squares[idx].classList.remove('matched');
+                                    squares[idx].classList.remove('super-item');
+                                }
+                            }, 300);
+                        }
+                    }
+                }
+            }
+            if (squares[centerIndex]) showFloatingText(squares[centerIndex], "BOOM!");
+        }
+
+        function moveDown() {
+            if (squares.length < width * width) return;
+
+            for (let i = 0; i < width * (width - 1); i++) {
+                // Ensure squares exist
+                if (!squares[i + width] || !squares[i]) continue;
+
+                if (squares[i + width].innerText === '') {
+                    squares[i + width].innerText = squares[i].innerText;
+                    
+                    if (squares[i].classList.contains('super-item')) {
+                        squares[i + width].classList.add('super-item');
+                        squares[i].classList.remove('super-item');
+                    } else {
+                        squares[i + width].classList.remove('super-item');
+                    }
+
+                    squares[i].innerText = '';
+                    squares[i].classList.remove('super-item');
+                }
+                
+                const firstRow = Array.from({length: width}, (_, k) => k);
+                if (firstRow.includes(i) && squares[i].innerText === '') {
+                    let randomType;
+                    let attempt = 0;
+                    
+                    do {
+                        randomType = Math.floor(Math.random() * currentLevelTypes.length);
+                        attempt++;
+                    } while (
+                        attempt < 10 && (
+                            (squares[i + width] && squares[i + width].innerText === currentLevelTypes[randomType]) || 
+                            (i > 0 && squares[i - 1] && squares[i - 1].innerText === currentLevelTypes[randomType])
+                        )
+                    );
+
+                    squares[i].innerText = currentLevelTypes[randomType];
+                    
+                    if (Math.random() < 0.005) {
+                        squares[i].classList.add('super-item');
+                    } else {
+                        squares[i].classList.remove('super-item');
+                    }
+                }
+            }
+        }
+
+        function showFloatingText(element, text) {
+            if(!element) return;
+            const rect = element.getBoundingClientRect();
+            const floatEl = document.createElement('div');
+            floatEl.innerText = text;
+            floatEl.classList.add('floating-text');
+            floatEl.style.left = rect.left + 'px';
+            floatEl.style.top = rect.top + 'px';
+            document.body.appendChild(floatEl);
+            setTimeout(() => floatEl.remove(), 1000);
+        }
+
+    </script>
+</body>
+</html>
