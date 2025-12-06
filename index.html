@@ -10,7 +10,9 @@
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Noto+Sans+TC:wght@400;700&display=swap');
 
         body {
+            /* 介面文字：優先顯示中文 Noto Sans TC，後面才補 Emoji 支援 */
             font-family: 'Fredoka', 'Noto Sans TC', sans-serif;
+            
             touch-action: manipulation;
             user-select: none;
             -webkit-user-select: none;
@@ -18,20 +20,20 @@
         }
 
         /* The Game Grid */
-.grid-container {
-    display: grid;
-    gap: 2px;      /* Reduced from 4px to 2px to save space between tiles */
-    width: 100%;
-    max-width: 500px;
-    aspect-ratio: 1 / 1;
-    background-color: rgba(255, 255, 255, 0.25);
-    border-radius: 12px; /* Slightly tighter radius */
-    padding: 5px;  /* Reduced from 10px to 5px */
-    backdrop-filter: blur(8px);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-    border: 1px solid rgba(255,255,255,0.4);
-    transition: all 0.3s ease;
-}
+        .grid-container {
+            display: grid;
+            gap: 2px; /* 極小間距 */
+            width: 100%;
+            max-width: 500px;
+            aspect-ratio: 1 / 1;
+            background-color: rgba(255, 255, 255, 0.25);
+            border-radius: 12px;
+            padding: 4px; /* 極小內距 */
+            backdrop-filter: blur(8px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            border: 1px solid rgba(255,255,255,0.4);
+            transition: all 0.3s ease;
+        }
 
         .tile {
             position: relative;
@@ -39,51 +41,46 @@
             justify-content: center;
             align-items: center;
             cursor: pointer;
-            border-radius: 12px;
+            border-radius: 8px;
             background-color: rgba(255, 255, 255, 0.85);
             transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
             aspect-ratio: 1;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1), inset 0 -4px 0 rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1), inset 0 -2px 0 rgba(0,0,0,0.1);
             z-index: 1;
+            
+            /* 🔥🔥🔥 關鍵修正：方塊內的字體強制「Emoji 優先」🔥🔥🔥 */
+            /* 這樣可以確保 Windows/Mac 絕對使用彩色 3D 圖示，而不是中文字體裡的黑白符號 */
+            font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif;
 
-            /* 🔥 修正關鍵：確保邊框算在尺寸內，且內容不溢出 */
             box-sizing: border-box;
             overflow: hidden; 
         }
 
         .tile:active { transform: scale(0.92); }
 
-        /* Selected State - Modified */
+        /* Selected State */
         .tile.selected {
             background-color: #fef08a;
-            
-            /* 🔥 修正關鍵：邊框算在內 */
             box-sizing: border-box; 
-            
-            /* 🔥 修正關鍵：強制鎖定大小，加上 !important 防止被動畫覆蓋 */
             transform: scale(1) !important; 
-            
             z-index: 10;
-            
-            /* 視覺優化：稍微縮小發光範圍 */
-            box-shadow: 0 0 15px #fde047; 
-            border: 3px solid #eab308;
+            box-shadow: 0 0 10px #fde047; 
+            border: 2px solid #eab308;
         }
 
-        /* Super Landmark (Bomb) */
+        /* Super Landmark */
         .tile.super-item {
             background: radial-gradient(circle at 30% 30%, #4ade80, #3b82f6);
             box-shadow: 0 0 15px #3b82f6, inset 0 -4px 0 rgba(0,0,0,0.2);
             animation: pulse 1.5s infinite;
             border: 2px solid white;
-            box-sizing: border-box; /* 這裡也要加 */
+            box-sizing: border-box;
         }
 
-        /* 🔥 修正關鍵：修改動畫，只閃爍不放大 */
         @keyframes pulse {
-            0% { transform: scale(1); box-shadow: 0 0 10px #3b82f6; }
-            50% { transform: scale(1); box-shadow: 0 0 25px #60a5fa; } /* 這裡改成 1 */
-            100% { transform: scale(1); box-shadow: 0 0 10px #3b82f6; }
+            0% { transform: scale(1); box-shadow: 0 0 5px #3b82f6; }
+            50% { transform: scale(1); box-shadow: 0 0 15px #60a5fa; } 
+            100% { transform: scale(1); box-shadow: 0 0 5px #3b82f6; }
         }
 
         /* Match Animation */
@@ -108,6 +105,8 @@
             animation: floatUp 0.8s ease-out forwards;
             z-index: 50;
             white-space: nowrap;
+            /* 浮動文字用一般字體即可 */
+            font-family: 'Fredoka', sans-serif;
         }
 
         @keyframes floatUp {
@@ -172,21 +171,18 @@
         }
         .support-cta {
             margin-bottom: 8px;
-            /* Ensure button stays on one line */
             white-space: nowrap; 
         }
         .support-btn {
             background: rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(4px);
-            /* Reduced padding */
             padding: 6px 12px; 
             border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.3);
-            /* Removed bold font weight */
             font-weight: normal; 
             text-decoration: none;
             transition: all 0.3s ease;
-            font-size: 0.9rem; /* Slightly smaller font size */
+            font-size: 0.9rem; 
         }
         .support-btn:hover {
             background: rgba(255, 255, 255, 0.35);
@@ -194,7 +190,8 @@
         }
     </style>
 </head>
-<body id="game-body" class="min-h-screen flex flex-col items-center p-2 pb-24 overflow-hidden text-gray-800 relative">
+<body id="game-body" class="min-h-screen flex flex-col items-center p-1 pb-24 overflow-hidden text-gray-800 relative">
+    
     <div class="flex-1 flex flex-col items-center justify-center w-full max-w-[500px] mb-4">
         <div class="w-full mb-4 px-2 relative">
             <div class="flex justify-between items-center mb-3">
@@ -531,7 +528,7 @@
 
             // Update Background
             const bgClass = levelBackgrounds[(level - 1) % levelBackgrounds.length];
-            gameBody.className = `min-h-screen flex flex-col items-center p-4 pb-24 overflow-hidden text-gray-800 relative ${bgClass}`;
+            gameBody.className = `min-h-screen flex flex-col items-center p-1 pb-24 overflow-hidden text-gray-800 relative ${bgClass}`;
 
             // Level Progression
             const numTypes = Math.min(4 + Math.floor((level - 1) / 2), allLandmarkTypes.length);
@@ -570,11 +567,12 @@
                 square.setAttribute('id', i);
                 square.classList.add('tile');
                 
-                // Optimized Tile Size for Mobile - REDUCED SIZES
+                // 🔥 修改：調整 Emoji 大小，因為方塊變大了，所以字體也放大一點
+                // 這裡數值調大到 13vw 和 9.5vw，確保填滿格子
                 if (width === 5) {
-                    square.style.fontSize = 'clamp(22px, 10vw, 46px)'; // Smaller clamp values
+                    square.style.fontSize = 'clamp(32px, 13vw, 60px)'; 
                 } else {
-                    square.style.fontSize = 'clamp(18px, 7vw, 36px)'; // Smaller clamp values
+                    square.style.fontSize = 'clamp(24px, 9.5vw, 48px)'; 
                 }
 
                 let randomType;
@@ -757,16 +755,16 @@
                 btnElement.classList.remove('bg-blue-50', 'hover:bg-blue-100', 'text-blue-800', 'border-blue-200');
                 btnElement.classList.add('bg-red-500', 'text-white', 'border-red-600', 'shadow-md');
                 
-// 修改後的程式碼 (縮小版)
-quizFeedbackEl.innerHTML = `
-<div class="mb-2">
-                        <span class='font-black text-base text-red-600 block'>答錯！ ${SCORE_QUIZ_WRONG}分、-3 步！</span>
+                // 🔥 修改：縮小版面，避免按鈕被遮住
+                quizFeedbackEl.innerHTML = `
+                    <div class="mb-2">
+                        <span class='font-black text-base text-red-600 block'>答錯了！ ${SCORE_QUIZ_WRONG}分，懲罰 -3 步！</span>
                     </div>
                     <div class="p-2 bg-green-50 border-2 border-green-400 rounded-xl shadow-md animate-[pulse_1s_infinite]">
                         <p class="text-[12px] font-black text-gray-500 uppercase mb-0 tracking-widest">正確答案是</p>
                         <p class="text-lg font-black text-green-600 drop-shadow-sm leading-tight">${correctText}</p>
                     </div>
-`;
+                `;
             }
             
             updateUI();
