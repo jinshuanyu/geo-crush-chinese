@@ -322,6 +322,54 @@
     </div>
 
     <script>
+        function hasPossibleMove() {
+    if (squares.length < width * width) return true;
+
+    const trySwapAndCheck = (i, j) => {
+        if (!squares[i] || !squares[j]) return false;
+
+        const temp = squares[i].innerText;
+        squares[i].innerText = squares[j].innerText;
+        squares[j].innerText = temp;
+
+        const ok = checkRowForThree(true) || checkColumnForThree(true);
+
+        squares[j].innerText = squares[i].innerText;
+        squares[i].innerText = temp;
+
+        return ok;
+    };
+
+    for (let i = 0; i < width * width; i++) {
+        if (i % width !== width - 1) {
+            if (trySwapAndCheck(i, i + 1)) return true;
+        }
+        if (i + width < width * width) {
+            if (trySwapAndCheck(i, i + width)) return true;
+        }
+    }
+    return false;
+}
+
+function shuffleBoard() {
+    const items = squares.map(s => s.innerText).filter(t => t !== '');
+
+    for (let i = items.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [items[i], items[j]] = [items[j], items[i]];
+    }
+
+    let k = 0;
+    squares.forEach(s => {
+        if (s.innerText !== '') {
+            s.innerText = items[k++];
+            s.classList.remove('selected', 'matched', 'super-item');
+        }
+    });
+
+    if (!hasPossibleMove()) shuffleBoard();
+}
+
         const gridDisplay = document.querySelector('#grid');
         const scoreDisplay = document.querySelector('#score-display');
         const movesDisplay = document.querySelector('#moves-display');
@@ -884,12 +932,15 @@
             scheduleSave();
         }
 
-        function checkMatches() {
-            if (squares.length < width * width) return;
-            checkRowForThree();
-            checkColumnForThree();
-            updateUI();
-        }
+function checkMatches() {
+    if (squares.length < width * width) return;
+    checkRowForThree();
+    checkColumnForThree();
+    updateUI();
+
+    if (!hasPossibleMove()) shuffleBoard();
+}
+
 
         function triggerQuiz() {
             if(isLevelComplete) return; 
