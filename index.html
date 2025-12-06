@@ -683,12 +683,19 @@ function shuffleBoard() {
             // If loaded, we already have a board and UI.
 
             // Game Loop
-            gameInterval = window.setInterval(() => {
-                if(!modal.classList.contains('active') && !isQuizActive && !isLevelComplete && !instructionsModal.classList.contains('active')) {
-                    moveDown();
-                    checkMatches();
-                }
-            }, 100);
+gameInterval = window.setInterval(() => {
+    if(
+        !modal.classList.contains('active') &&
+        !isQuizActive &&
+        !isLevelComplete &&
+        !instructionsModal.classList.contains('active') &&
+        !isProcessing
+    ) {
+        moveDown();
+        checkMatches();
+    }
+}, 100);
+
             
             document.body.addEventListener('click', () => {
                 if (audioCtx.state === 'suspended') audioCtx.resume();
