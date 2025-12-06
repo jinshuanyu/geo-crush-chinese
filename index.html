@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>環遊世界</title>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Noto+Sans+TC:wght@400;700&display=swap');
@@ -134,51 +136,106 @@
         .quiz-option:active {
             transform: scale(0.96);
         }
+
+        /* Footer Styles */
+        .credits {
+            margin-top: auto;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.9rem;
+            z-index: 10;
+            position: relative;
+            padding-bottom: 1rem;
+            width: 100%;
+        }
+        .credits a {
+            color: white;
+            transition: transform 0.2s, opacity 0.2s;
+            display: inline-block;
+        }
+        .credits a:hover {
+            transform: translateY(-2px);
+            opacity: 1;
+        }
+        .support-cta {
+            margin-bottom: 8px;
+        }
+        .support-btn {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(4px);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            font-weight: bold;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+        .support-btn:hover {
+            background: rgba(255, 255, 255, 0.35);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
-<body id="game-body" class="min-h-screen flex flex-col items-center justify-center p-4 overflow-hidden text-gray-800">
+<body id="game-body" class="min-h-screen flex flex-col items-center p-4 overflow-hidden text-gray-800">
+    
+    <div class="flex-1 flex flex-col items-center justify-center w-full max-w-[500px]">
+        <!-- Header -->
+        <div class="w-full mb-4 px-2 relative">
+            <div class="flex justify-between items-center mb-3">
+                <div>
+                    <h1 class="text-4xl font-black text-white drop-shadow-lg tracking-wider">環遊世界</h1>
+                    <!-- Info Button -->
+                    <div class="flex items-center gap-2 mt-1">
+                        <p class="text-white/90 text-base font-bold">第 <span id="level-display" class="text-yellow-300 text-xl">1</span> 關</p>
+                        <button onclick="showInstructions()" class="bg-white/20 hover:bg-white/30 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold border border-white/40 transition text-sm" aria-label="遊戲說明">
+                            ?
+                        </button>
+                    </div>
+                </div>
 
-    <!-- Header -->
-    <div class="w-full max-w-[500px] mb-4 px-2 relative">
-        <div class="flex justify-between items-center mb-3">
-            <div>
-                <h1 class="text-4xl font-black text-white drop-shadow-lg tracking-wider">環遊世界</h1>
-                <!-- Moved Info Button here next to Level Display -->
-                <div class="flex items-center gap-2 mt-1">
-                    <p class="text-white/90 text-base font-bold">第 <span id="level-display" class="text-yellow-300 text-xl">1</span> 關</p>
-                    <button onclick="showInstructions()" class="bg-white/20 hover:bg-white/30 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold border border-white/40 transition text-sm" aria-label="遊戲說明">
-                        ?
-                    </button>
+                <div class="flex gap-3 mt-2">
+                     <div class="bg-white/90 rounded-2xl px-3 py-2 shadow-lg text-center min-w-[70px] border-b-4 border-blue-200">
+                        <p class="text-[10px] text-gray-500 uppercase font-bold tracking-wide">目標</p>
+                        <p id="target-display" class="text-xl font-black text-blue-600 leading-tight">600</p>
+                    </div>
+                    <div class="bg-white/90 rounded-2xl px-3 py-2 shadow-lg text-center min-w-[70px] border-b-4 border-red-200">
+                        <p class="text-[10px] text-gray-500 uppercase font-bold tracking-wide">步數</p>
+                        <p id="moves-display" class="text-xl font-black text-red-500 leading-tight">20</p>
+                    </div>
                 </div>
             </div>
-
-            <div class="flex gap-3 mt-2">
-                 <div class="bg-white/90 rounded-2xl px-3 py-2 shadow-lg text-center min-w-[70px] border-b-4 border-blue-200">
-                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-wide">目標</p>
-                    <p id="target-display" class="text-xl font-black text-blue-600 leading-tight">600</p>
-                </div>
-                <div class="bg-white/90 rounded-2xl px-3 py-2 shadow-lg text-center min-w-[70px] border-b-4 border-red-200">
-                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-wide">步數</p>
-                    <p id="moves-display" class="text-xl font-black text-red-500 leading-tight">20</p>
-                </div>
+            
+            <!-- Progress Bar -->
+            <div class="w-full bg-black/20 h-3 rounded-full overflow-hidden backdrop-blur-sm border border-white/20 shadow-inner">
+                <div id="progress-bar" class="h-full bg-gradient-to-r from-yellow-300 to-orange-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(253,224,71,0.6)]" style="width: 0%"></div>
             </div>
+        </div>
+
+        <!-- Game Board -->
+        <div class="grid-container relative" id="grid">
+            <!-- Grid items generated by JS -->
         </div>
         
-        <!-- Progress Bar -->
-        <div class="w-full bg-black/20 h-3 rounded-full overflow-hidden backdrop-blur-sm border border-white/20 shadow-inner">
-            <div id="progress-bar" class="h-full bg-gradient-to-r from-yellow-300 to-orange-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(253,224,71,0.6)]" style="width: 0%"></div>
+        <!-- Floating Score -->
+        <div class="mt-6 bg-white/10 backdrop-blur-md rounded-full px-6 py-2 border border-white/20">
+            <span class="text-white font-bold text-xl drop-shadow-md">得分: <span id="score-display" class="font-mono text-2xl text-yellow-300">0</span></span>
         </div>
     </div>
 
-    <!-- Game Board -->
-    <div class="grid-container relative" id="grid">
-        <!-- Grid items generated by JS -->
-    </div>
-    
-    <!-- Floating Score -->
-    <div class="mt-6 bg-white/10 backdrop-blur-md rounded-full px-6 py-2 border border-white/20">
-        <span class="text-white font-bold text-xl drop-shadow-md">得分: <span id="score-display" class="font-mono text-2xl text-yellow-300">0</span></span>
-    </div>
+    <!-- Custom Footer -->
+    <footer class="credits">
+        <a href="mailto:mamahowma@gmail.com" aria-label="Email mamahowma"><i class="fa-solid fa-envelope fa-xl fa-fw" aria-hidden="true"></i></a>&emsp;
+        <a href="https://www.facebook.com/mamahowma" target="_blank" rel="noopener noreferrer" aria-label="mamahowma Facebook Page"><i class="fa-brands fa-facebook fa-xl fa-fw" aria-hidden="true"></i></a>&emsp;
+        <a href="https://portaly.cc/mamahowma/support" target="_blank" rel="noopener noreferrer" aria-label="Support mamahowma"><i class="fa-solid fa-mug-hot fa-xl fa-fw" aria-hidden="true"></i></a>
+        <br /><br />
+        <div class="support-cta">
+            <a href="https://portaly.cc/mamahowma/support" target="_blank" rel="noopener noreferrer" class="support-btn">
+            喜歡這個免費遊戲嗎？☕ 請杯咖啡鼓勵我
+            </a>
+        </div><br />
+        © 2025 Christina Yu. All rights reserved.
+    </footer>
 
     <!-- Level Complete / Game Over Modal -->
     <div id="game-modal" class="modal">
@@ -471,7 +528,7 @@
 
             // Update Background
             const bgClass = levelBackgrounds[(level - 1) % levelBackgrounds.length];
-            gameBody.className = `min-h-screen flex flex-col items-center justify-center p-4 overflow-hidden text-gray-800 ${bgClass}`;
+            gameBody.className = `min-h-screen flex flex-col items-center p-4 overflow-hidden text-gray-800 ${bgClass}`;
 
             // Level Progression
             const numTypes = Math.min(4 + Math.floor((level - 1) / 2), allLandmarkTypes.length);
