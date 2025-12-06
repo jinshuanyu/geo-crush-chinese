@@ -184,7 +184,8 @@
         <div class="w-full mb-4 px-2 relative">
             <div class="flex justify-between items-center mb-3">
                 <div>
-                    <h1 class="text-4xl font-black text-white drop-shadow-lg tracking-wider">環遊世界</h1>
+                    <!-- Updated title size: text-3xl for mobile, md:text-4xl for larger screens -->
+                    <h1 class="text-3xl md:text-4xl font-black text-white drop-shadow-lg tracking-wider">環遊世界</h1>
                     <!-- Info Button -->
                     <div class="flex items-center gap-2 mt-1">
                         <p class="text-white/90 text-base font-bold">第 <span id="level-display" class="text-yellow-300 text-xl">1</span> 關</p>
@@ -231,7 +232,7 @@
         <br /><br />
         <div class="support-cta">
             <a href="https://portaly.cc/mamahowma/support" target="_blank" rel="noopener noreferrer" class="support-btn">
-            喜歡這個免費遊戲嗎？☕ 請杯咖啡鼓勵我
+            喜歡這個免費工具嗎？☕ 請杯咖啡鼓勵我
             </a>
         </div><br />
         © 2025 Christina Yu. All rights reserved.
@@ -567,11 +568,11 @@
                 square.setAttribute('id', i);
                 square.classList.add('tile');
                 
-                // Optimized Tile Size for Mobile
+                // Optimized Tile Size for Mobile - REDUCED SIZES
                 if (width === 5) {
-                    square.style.fontSize = 'clamp(32px, 12vw, 56px)';
+                    square.style.fontSize = 'clamp(22px, 10vw, 46px)'; // Smaller clamp values
                 } else {
-                    square.style.fontSize = 'clamp(24px, 8vw, 42px)';
+                    square.style.fontSize = 'clamp(18px, 7vw, 36px)'; // Smaller clamp values
                 }
 
                 let randomType;
