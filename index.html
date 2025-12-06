@@ -18,20 +18,20 @@
         }
 
         /* The Game Grid */
-        .grid-container {
-            display: grid;
-            gap: 4px;
-            width: 100%;
-            max-width: 500px;
-            aspect-ratio: 1 / 1;
-            background-color: rgba(255, 255, 255, 0.25);
-            border-radius: 16px;
-            padding: 10px;
-            backdrop-filter: blur(8px);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-            border: 1px solid rgba(255,255,255,0.4);
-            transition: all 0.3s ease;
-        }
+.grid-container {
+    display: grid;
+    gap: 2px;      /* Reduced from 4px to 2px to save space between tiles */
+    width: 100%;
+    max-width: 500px;
+    aspect-ratio: 1 / 1;
+    background-color: rgba(255, 255, 255, 0.25);
+    border-radius: 12px; /* Slightly tighter radius */
+    padding: 5px;  /* Reduced from 10px to 5px */
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    border: 1px solid rgba(255,255,255,0.4);
+    transition: all 0.3s ease;
+}
 
         .tile {
             position: relative;
@@ -194,7 +194,7 @@
         }
     </style>
 </head>
-<body id="game-body" class="min-h-screen flex flex-col items-center p-4 pb-24 overflow-hidden text-gray-800 relative">
+<body id="game-body" class="min-h-screen flex flex-col items-center p-2 pb-24 overflow-hidden text-gray-800 relative">
     <div class="flex-1 flex flex-col items-center justify-center w-full max-w-[500px] mb-4">
         <div class="w-full mb-4 px-2 relative">
             <div class="flex justify-between items-center mb-3">
