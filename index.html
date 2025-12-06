@@ -7,12 +7,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* 介面字體 */
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Noto+Sans+TC:wght@400;700&display=swap');
 
         body {
-            /* 介面文字：優先顯示中文 Noto Sans TC，後面才補 Emoji 支援 */
             font-family: 'Fredoka', 'Noto Sans TC', sans-serif;
-            
             touch-action: manipulation;
             user-select: none;
             -webkit-user-select: none;
@@ -22,13 +21,13 @@
         /* The Game Grid */
         .grid-container {
             display: grid;
-            gap: 2px; /* 極小間距 */
+            gap: 2px;
             width: 100%;
             max-width: 500px;
             aspect-ratio: 1 / 1;
             background-color: rgba(255, 255, 255, 0.25);
             border-radius: 12px;
-            padding: 4px; /* 極小內距 */
+            padding: 4px;
             backdrop-filter: blur(8px);
             box-shadow: 0 8px 32px rgba(0,0,0,0.15);
             border: 1px solid rgba(255,255,255,0.4);
@@ -47,10 +46,23 @@
             aspect-ratio: 1;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1), inset 0 -2px 0 rgba(0,0,0,0.1);
             z-index: 1;
+
+            /* 🔥🔥🔥 核彈級修正開始 🔥🔥🔥 */
             
-            /* 🔥🔥🔥 關鍵修正：方塊內的字體強制「Emoji 優先」🔥🔥🔥 */
-            /* 這樣可以確保 Windows/Mac 絕對使用彩色 3D 圖示，而不是中文字體裡的黑白符號 */
-            font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif;
+            /* 1. 絕對不包含任何中文或英文普通字體，只放 Emoji 字體 */
+            font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Android Emoji", sans-serif;
+            
+            /* 2. 強制設定為一般粗細 (Windows 一旦變粗體就會變黑白) */
+            font-weight: 400 !important;
+            font-style: normal;
+            
+            /* 3. 告訴瀏覽器不要合成字體 */
+            font-synthesis: none;
+            
+            /* 4. 強制使用 Emoji 變體 */
+            font-variant-emoji: emoji;
+            
+            /* 🔥🔥🔥 核彈級修正結束 🔥🔥🔥 */
 
             box-sizing: border-box;
             overflow: hidden; 
@@ -105,7 +117,6 @@
             animation: floatUp 0.8s ease-out forwards;
             z-index: 50;
             white-space: nowrap;
-            /* 浮動文字用一般字體即可 */
             font-family: 'Fredoka', sans-serif;
         }
 
@@ -334,19 +345,20 @@
         let width = 5; // Default start width (5x5)
         const squares = [];
         
-        // Expanded Landmark Emojis Pool
+        // 🔥🔥🔥 修正：在所有 Emoji 後面加上 \uFE0F (Variation Selector-16)
+        // 這是 Unicode 標準強制要求顯示為「彩色圖片」的隱形字符，對 Windows 非常重要
         const allLandmarkTypes = [
-            '🗼', // Tokyo Tower / Eiffel Tower
-            '🗻', // Fuji
-            '🗿', // Moai
-            '🗽', // Liberty
-            '🕌', // Taj Mahal
-            '🏯', // Japanese Castle
-            '🏰', // European Castle
-            '🌉', // Golden Gate
-            '🏛️', // Parthenon
-            '🏜️', // Pyramids
-            '⛩️', // Torii Gate
+            '🗼\uFE0F', // Tokyo Tower
+            '🗻\uFE0F', // Fuji
+            '🗿\uFE0F', // Moai
+            '🗽\uFE0F', // Liberty
+            '🕌\uFE0F', // Taj Mahal
+            '🏯\uFE0F', // Japanese Castle
+            '🏰\uFE0F', // European Castle
+            '🌉\uFE0F', // Golden Gate
+            '🏛️\uFE0F', // Parthenon
+            '🏜️\uFE0F', // Pyramids
+            '⛩️\uFE0F', // Torii Gate
         ];
         
         let currentLevelTypes = []; 
@@ -567,8 +579,7 @@
                 square.setAttribute('id', i);
                 square.classList.add('tile');
                 
-                // 🔥 修改：調整 Emoji 大小，因為方塊變大了，所以字體也放大一點
-                // 這裡數值調大到 13vw 和 9.5vw，確保填滿格子
+                // 🔥 Font Size Optimized for new larger tiles (13vw / 9.5vw)
                 if (width === 5) {
                     square.style.fontSize = 'clamp(32px, 13vw, 60px)'; 
                 } else {
