@@ -21,7 +21,7 @@
         /* The Game Grid */
         .grid-container {
             display: grid;
-            gap: 4px; /* Slightly larger gap for cleaner look */
+            gap: 4px;
             width: 100%;
             max-width: 500px;
             aspect-ratio: 1 / 1;
@@ -50,10 +50,10 @@
 
         .tile:active { transform: scale(0.92); }
 
-        /* Selected State */
+        /* Selected State - REMOVED SCALE */
         .tile.selected {
             background-color: #fef08a;
-            transform: scale(1.1);
+            /* transform: scale(1.1);  <-- Removed this line */
             z-index: 10;
             box-shadow: 0 0 20px #fde047;
             border: 3px solid #eab308;
@@ -159,17 +159,21 @@
         }
         .support-cta {
             margin-bottom: 8px;
+            /* Ensure button stays on one line */
+            white-space: nowrap; 
         }
         .support-btn {
             background: rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(4px);
-            padding: 8px 16px;
+            /* Reduced padding */
+            padding: 6px 12px; 
             border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.3);
-            font-weight: bold;
+            /* Removed bold font weight */
+            font-weight: normal; 
             text-decoration: none;
             transition: all 0.3s ease;
-            font-size: 0.95rem;
+            font-size: 0.9rem; /* Slightly smaller font size */
         }
         .support-btn:hover {
             background: rgba(255, 255, 255, 0.35);
@@ -177,9 +181,10 @@
         }
     </style>
 </head>
-<body id="game-body" class="min-h-screen flex flex-col items-center p-4 overflow-hidden text-gray-800">
+<body id="game-body" class="min-h-screen flex flex-col items-center p-4 pb-24 overflow-hidden text-gray-800 relative">
+    <!-- Added pb-24 to body and relative positioning -->
     
-    <div class="flex-1 flex flex-col items-center justify-center w-full max-w-[500px]">
+    <div class="flex-1 flex flex-col items-center justify-center w-full max-w-[500px] mb-4">
         <!-- Header -->
         <div class="w-full mb-4 px-2 relative">
             <div class="flex justify-between items-center mb-3">
@@ -224,12 +229,8 @@
         </div>
     </div>
 
-    <!-- Custom Footer -->
-    <footer class="credits">
-        <a href="mailto:mamahowma@gmail.com" aria-label="Email mamahowma"><i class="fa-solid fa-envelope fa-xl fa-fw" aria-hidden="true"></i></a>&emsp;
-        <a href="https://www.facebook.com/mamahowma" target="_blank" rel="noopener noreferrer" aria-label="mamahowma Facebook Page"><i class="fa-brands fa-facebook fa-xl fa-fw" aria-hidden="true"></i></a>&emsp;
-        <a href="https://portaly.cc/mamahowma/support" target="_blank" rel="noopener noreferrer" aria-label="Support mamahowma"><i class="fa-solid fa-mug-hot fa-xl fa-fw" aria-hidden="true"></i></a>
-        <br /><br />
+    <!-- Custom Footer - Now absolutely positioned at bottom -->
+
         <div class="support-cta">
             <a href="https://portaly.cc/mamahowma/support" target="_blank" rel="noopener noreferrer" class="support-btn">
             喜歡這個免費工具嗎？☕ 請杯咖啡鼓勵我
@@ -529,7 +530,7 @@
 
             // Update Background
             const bgClass = levelBackgrounds[(level - 1) % levelBackgrounds.length];
-            gameBody.className = `min-h-screen flex flex-col items-center p-4 overflow-hidden text-gray-800 ${bgClass}`;
+            gameBody.className = `min-h-screen flex flex-col items-center p-4 pb-24 overflow-hidden text-gray-800 relative ${bgClass}`;
 
             // Level Progression
             const numTypes = Math.min(4 + Math.floor((level - 1) / 2), allLandmarkTypes.length);
